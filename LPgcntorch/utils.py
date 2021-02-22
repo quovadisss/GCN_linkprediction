@@ -53,19 +53,6 @@ def create_adj(table):
             if j != 0:
                 adj[e1][e2] = 1
 
-    # D tilde to the power of -1/2 : Degree matrix from A tilde
-    # dg = []
-    # for i in adj:
-    #     rowsum = np.sum(i)
-    #     r_inv = np.power(rowsum, -0.5)
-    #     dg.append(r_inv)
-    # dg = np.diag(np.array(dg))
-
-    # # A hat
-    # adj = np.dot(dg, adj)
-    # adj = np.dot(adj, dg)
-
-    # return sparse_to_tuple(sp.csr_matrix(adj))
     return sp.csr_matrix(adj), cpc_order
 
 
