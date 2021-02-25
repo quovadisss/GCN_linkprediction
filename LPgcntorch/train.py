@@ -8,7 +8,6 @@ import numpy as np
 import argparse
 
 import scipy.sparse as sp
-import matplotlib.pyplot as plt
 
 import torch
 import torch.nn.functional as F
@@ -108,7 +107,7 @@ def train(epoch):
     
     loss_train = criterion(output, tr_labels.float())
     acc_train = accuracy(output, tr_labels.float())
-    # auc_train = auc_score(output, tr_labels.float())
+    auc_train = auc_score(output, tr_labels.float())
     loss_train.backward()
     optimizer.step()
 
@@ -117,43 +116,58 @@ def train(epoch):
     output = m(output)
     loss_val = criterion(output, val_labels.float())
     acc_val = accuracy(output, val_labels.float())
-    # auc_val = auc_score(output, val_labels.float())
+    auc_val = auc_score(output, val_labels.float())
 
     print('Epoch: {:04d}'.format(epoch+1),
           'loss_train: {:.4f}'.format(loss_train.item()),
           'acc_train: {:.4f}'.format(acc_train),
-          # 'roc_auc_train: {:.4f}'.format(auc_train),
-          '\n'
+          'roc_auc_train: {:.4f}'.format(auc_train),
           'loss_val: {:.4f}'.format(loss_val.item()),
           'acc_val: {:.4f}'.format(acc_val),
-          # 'roc_auc_val: {:.4f}'.format(auc_val),
-          'time: {:.4f}s'.format(time.time() - t),
-          '\n', '\n')
+          'roc_auc_val: {:.4f}'.format(auc_val),
+          'time: {:.4f}s'.format(time.time() - t))
     
-    return loss_train, loss_val
+    return loss_train, loss_val, acc_train, acc_val, auc_train, auc_val
 
 
-loss = []
+tr_loss = []
 val_loss = []
+tr_acc = []
+val_acc = []
+tr_auc = []
+val_auc = []
 for e in range(args.epochs):
-    loss_train, loss_val = train(e)
-    loss.append(loss_train)
+    loss_train, loss_val, acc_train, acc_val, auc_train, auc_val = train(e)
+    tr_loss.append(loss_train)
     val_loss.append(loss_val)
+    tr_acc.append(acc_train)
+    val_acc.append(acc_val)
+    tr_auc.append(auc_train)
+    val_auc.append(auc_val)
 print('Done!')
 
 
 # Save loss figure
-epochs = range(1, len(loss) + 1)
+epochs = range(1, args.epochs + 1)
 
-plt.plot(epochs, loss, 'bo', label='Training loss') 
-plt.plot(epochs, val_loss, 'b', label='Validation loss') 
-plt.title('Training and validation loss') 
-plt.xlabel('Epochs') 
-plt.ylabel('Loss') 
-plt.legend()
-plt.savefig('data/train_val_loss.png')
-plt.show()
-
+plotting(epochs, tr_loss, val_loss,
+        'Training loss','Validation loss',
+        'Training and validation loss',
+        'Epochs',
+        'Loss',
+        'train_val_loss')
+plotting(epochs, tr_acc, val_acc,
+        'Training accuracy','Validation accuracy',
+        'Training and validation accuracy',
+        'Epochs',
+        'Accuracy',
+        'train_val_acc')
+plotting(epochs, tr_auc, val_auc,
+        'Training roc_auc','Validation roc_auc',
+        'Training and validation roc_auc',
+        'Epochs',
+        'ROC AUC',
+        'train_val_auc')
 
 # Save model weights
 weights = [model.gc1.weight, model.gc2.weight]

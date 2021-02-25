@@ -2,10 +2,11 @@ import random
 import pandas as pd
 import numpy as np
 import pickle as pkl
+import scipy.sparse as sp
+import matplotlib.pyplot as plt
 
 import torch
 
-import scipy.sparse as sp
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import roc_auc_score
 from nltk.corpus import stopwords
@@ -185,3 +186,14 @@ def auc_score(output, labels):
     y_label = labels.detach().numpy()
     auc = roc_auc_score(y_pred, y_label)
     return auc
+
+
+def plotting(x, tr_y, val_y, name_a, name_b, title, x_name, y_name, file_name):
+    plt.plot(x, tr_y, 'bo', label=name_a) 
+    plt.plot(x, val_y, 'b', label=name_b) 
+    plt.title(title) 
+    plt.xlabel(x_name) 
+    plt.ylabel(y_name) 
+    plt.legend()
+    plt.savefig('data/output/{}.png'.format(file_name))
+    plt.close()
