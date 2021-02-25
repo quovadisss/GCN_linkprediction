@@ -2,25 +2,27 @@ import random
 import pandas as pd
 import numpy as np
 import pickle as pkl
+
+import torch
+
 import scipy.sparse as sp
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics import roc_auc_score
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 
 
-
-
 # Delete data which has no cpc_set
 def delete_null(table):
     print('Initial length of the raw data is', table.shape[0])
-    df_ = table.copy()
-    for i in range(df_.shape[0]):
-        if df_['cpc_set'][i] == 'None':
-            df_.drop(i, inplace=True)
+    table_ = table.copy()
+    for i in range(table_.shape[0]):
+        if table_['cpc_set'][i] == 'None':
+            table_.drop(i, inplace=True)
     
-    print('Final length of the data is', df_.shape[0])
-    return df_
+    print('Final length of the data is', table_.shape[0])
+    return table_
 
 
 # Split data into train and test
@@ -125,3 +127,61 @@ def stopwords_lemma(txt):
 
     lemma_result = " ".join(lemma_words)
     return lemma_result
+
+
+def sparse_mx_to_torch_sparse_tensor(sparse_mx):
+    """Convert a scipy sparse matrix to a torch sparse tensor."""
+    sparse_mx = sparse_mx.tocoo().astype(np.float32)
+    indices = torch.from_numpy(
+        np.vstack((sparse_mx.row, sparse_mx.col)).astype(np.int64))
+    values = torch.from_numpy(sparse_mx.data)
+    shape = torch.Size(sparse_mx.shape)
+    return torch.sparse.FloatTensor(indices, values, shape)
+
+
+def make_ind_val(links):
+    a_indices = []
+    a_values = [1] * len(links)
+    b_indices = []
+    b_values = [1] * len(links)
+    for i in links:
+        a_indices.append(i[0][0])
+        b_indices.append(i[0][1])
+    a_indices = [[i for i in range(len(links))], a_indices]
+    b_indices = [[i for i in range(len(links))], b_indices]
+    return a_indices, a_values, b_indices, b_values
+
+
+def sparse_tensors(i, v, links_len, adj_len):
+    i_ = torch.LongTensor(i)
+    v_ = torch.FloatTensor(v)
+    result = torch.sparse.FloatTensor(i_, v_, torch.Size([links_len, adj_len])).to_dense()
+    return result
+
+
+def get_labels(links):
+    labels = []
+    for i in links:
+        if i[1] == 1:
+            labels.append(1)
+        else:
+            labels.append(0)
+    labels = torch.LongTensor(labels)
+    labels = torch.reshape(labels, (len(labels), 1))
+    return labels
+    
+
+def accuracy(output, labels):
+    preds = torch.round(output)
+    correct_results_sum = (preds == labels).sum().float()
+    acc = correct_results_sum/labels.shape[0]
+    acc = torch.round(acc * 100)
+    return acc
+
+
+def auc_score(output, labels):
+    preds = torch.round(output)
+    y_pred = preds.detach().numpy()
+    y_label = labels.detach().numpy()
+    auc = roc_auc_score(y_pred, y_label)
+    return auc

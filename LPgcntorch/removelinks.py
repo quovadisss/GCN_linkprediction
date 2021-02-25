@@ -1,13 +1,16 @@
-from scipy.sparse import csr_matrix
 import numpy as np
 import random
 import copy
 import pickle
+import time
+
+from scipy.sparse import csr_matrix
+
 from utils import *
-#import time
 
 
-#generate negative links for training   
+
+# Generate negative links for training   
 def negative_links(adj, pos_num):
     adj_array = csr_matrix(adj, dtype=np.int8).toarray()
     neg_links = []
@@ -19,7 +22,7 @@ def negative_links(adj, pos_num):
     return neg_links[:pos_num]
 
 
-#store postive links in a list for training
+# Store postive links in a list for training
 def positive_links(changed_array):
     changed_array = csr_matrix(changed_array, dtype=np.int8).toarray()
     pos_links = []
@@ -30,7 +33,7 @@ def positive_links(changed_array):
     return pos_links
 
 
-#generate nagative val samples
+# Generate nagative val samples
 def negative_valid(pos_val_num, adj, neg_links):
     neg_val = []
     
@@ -53,7 +56,7 @@ def negative_valid(pos_val_num, adj, neg_links):
     return neg_val
 
 
-#randomly remove existed links for LPG
+# Randomly remove existed links for LPgcntorch
 def removed_links(adj, percent):
     total_num = adj.nnz/2
     remove_links_num = int(total_num*percent)
@@ -90,7 +93,7 @@ def removed_links(adj, percent):
     changed_adj = csr_matrix(changed_adj)
     removes = sorted(removes, key=lambda a:a[0])
     print('The number of removd links:', int(len(removes)) )
-    print('The number links in changed adj', changed_adj.nnz/2)
+    print('The number of links in changed adj', changed_adj.nnz/2)
 
     tr_pos_links = positive_links(changed_adj)
     tr_neg_links = negative_links(adj, len(tr_pos_links))
@@ -98,13 +101,16 @@ def removed_links(adj, percent):
     random.shuffle(tr_pos_links)
     val_neg_links = negative_valid(len(removes), adj, tr_neg_links)
 
+    changed_adj = normalize_adj(changed_adj.toarray())
+
     # Return changed_adj, train links(pos + neg), val negative links, val positive links
-    return changed_adj, tr_pos_links, val_neg_links, removes
+    return sp.csr_matrix(changed_adj), tr_pos_links, val_neg_links, removes
 
 
-data_loc = '/Users/mingyupark/spyder/GCN_linkprediction/data/'
+t = time.time()
+
 # Load data
-df = pd.read_csv(data_loc + 'patent.csv').iloc[:, 1:]
+df = pd.read_csv('data/patent.csv').iloc[:, 1:]
 
 # Split data into train and test
 tr_df, ts_df = split_train_test(df)
@@ -113,23 +119,32 @@ tr_df, ts_df = split_train_test(df)
 tr_adj, tr_cpc_order = create_adj(tr_df)
 ts_adj, ts_cpc_order = create_adj(ts_df)
 
-tr_adj.toarray()
-tr_adj.shape
-#remove setting
+# Remove setting
 remove_percentage = 0.1
-#the number of non-zero
+# The number of non-zero
 print('The number of links in original graph:', tr_adj.nnz/2)
-#Remove links for training
+# Remove links for training
 changed_adj, tr_links, val_neg_links, val_pos_links = removed_links(tr_adj, remove_percentage)
-tr_val_info = [changed_adj, tr_links, val_neg_links, val_pos_links]
+
+# Val links
+val_labels = [0] * len(val_neg_links)
+val_labels.extend([1] * len(val_pos_links))
+val_neg_links.extend(val_pos_links)
+
+val_links = [[i,j] for i, j in zip(val_neg_links, val_labels)]
+random.shuffle(val_links)
+
+tr_val_info = [changed_adj, tr_links, val_links]
 orders = [tr_cpc_order, ts_cpc_order]
 
 # Save all links
-with open(data_loc + 'tr_val_info.pkl', 'wb') as fw:
+with open('data/tr_val_info.pkl', 'wb') as fw:
     pickle.dump(tr_val_info, fw)
 # Save test adj
-with open(data_loc + 'ts_adj.pkl', 'wb') as fw:
+with open('data/ts_adj.pkl', 'wb') as fw:
     pickle.dump(ts_adj, fw)
-# Save orders
-with open(data_loc + 'orders.pkl', 'wb') as fw:
+# Save orders(train cpc orders, test cpc orders)
+with open('data/orders.pkl', 'wb') as fw:
     pickle.dump(orders, fw)
+    
+print('Done', 'Time:', time.time()-t)

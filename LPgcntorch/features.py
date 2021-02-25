@@ -5,14 +5,17 @@ import numpy as np
 import pandas as pd
 import pickle as pkl
 
-from utils import *
+import torch
+
 from selenium import webdriver
 from collections import Counter
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import StandardScaler
 from nltk.corpus import stopwords
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
-from tqdm.notebook import tqdm
+
+from utils import *
 
 """
 Get feature matrix: X for GCN layer
@@ -203,17 +206,18 @@ def features_by_set(table, driver_loc, tr=True):
     feature_df = pd.DataFrame([feat_1, feat_2, feat_3, feat_4]).T
     feature_df = pd.concat([feature_df, feat_5], axis=1)
 
-    return feature_df
+    # Normalization with the StandardScaler
+    features = StandardScaler().fit_transform(np.array(feature_df))
+
+    return features
 
 
-data_loc = '/Users/mingyupark/spyder/GCN_linkprediction/data/'
 driver_loc = '/Users/mingyupark/spyder/chromedriver'
-df = pd.read_csv(data_loc + 'patent.csv').iloc[:, 1:]
+df = pd.read_csv('data/patent.csv').iloc[:, 1:]
 tr_df, ts_df = split_train_test(df)
 
-feature_df = features_by_set(tr_df, driver_loc, True)
-
-with open(data_loc + 'features.pkl', 'wb') as fw:
-    pkl.dump(np.array(feature_df), fw)
+features = features_by_set(tr_df, driver_loc, True)
+with open('data/features.pkl', 'wb') as fw:
+    pkl.dump(np.array(features), fw)
 
 
