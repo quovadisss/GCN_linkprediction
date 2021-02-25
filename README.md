@@ -12,14 +12,21 @@ This project is to predict whether patent's cpc nodes are linked or not. To acco
 6) Calculate similarities of node pairs.
 7) Minimize loss with the labels and update weights.
 
-## Code execution procedures
-1) crawling.py
-2) removelinks.py
-3) features.py
-4) train.py
+## Usage
+1) ```python crawling.py```
+2) ```python removelinks.py```
+3) ```python features.py```
+4) ```python train.py```
+* Best epochs was 44~46
 
 ## Reference
 - kenyonke/LinkPredictionGCN
 - tkipf/pygcn
 
+@article{kipf2016semi,
+  title={Semi-Supervised Classification with Graph Convolutional Networks},
+  author={Kipf, Thomas N and Welling, Max},
+  journal={arXiv preprint arXiv:1609.02907},
+  year={2016}
+}
 
