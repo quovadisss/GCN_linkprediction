@@ -26,7 +26,7 @@ parser.add_argument('--fastmode', action='store_true', default=False,
 parser.add_argument('--seed', type=int, default=42, help='Random seed.')
 parser.add_argument('--epochs', type=int, default=200,
                     help='Number of epochs to train.')
-parser.add_argument('--new_epochs', type=int, default=False,
+parser.add_argument('--new_epochs', action='store_true', default=False,
                     help='Save final results.')
 parser.add_argument('--lr', type=float, default=0.01,
                     help='Initial learning rate.')
@@ -106,7 +106,7 @@ def train(epoch):
     pre_output = model(features, adj)
     output = cosine(torch.matmul(tra, pre_output), torch.matmul(trb, pre_output)).reshape(len(tr_links), 1)
     # This saving output prodedure is for another analysis
-    if epoch == args.epochs:
+    if epoch+1 == args.epochs:
         with open('data/last_tr_output.pkl', 'wb') as fw:
             pickle.dump(output, fw)
     tr_output = m(output)
@@ -120,7 +120,7 @@ def train(epoch):
     # valid
     output = cosine(torch.matmul(vala, pre_output), torch.matmul(valb, pre_output)).reshape(len(val_links), 1)
     # This saving output prodedure is for another analysis
-    if epoch == args.epochs:
+    if epoch+1 == args.epochs:
         with open('data/last_val_output.pkl', 'wb') as fw:
             pickle.dump(output, fw)
     val_output = m(output)

@@ -1,11 +1,9 @@
 import datetime
 import time
 import re
+import pickle
 import numpy as np
 import pandas as pd
-import pickle as pkl
-
-import torch
 
 from selenium import webdriver
 from collections import Counter
@@ -188,10 +186,10 @@ def feature_five(unique_cpcs, driver_loc):
 def features_by_set(table, driver_loc, tr=True):
     if tr == True:
         with open('data/orders.pkl', 'rb') as fr:
-            unique_cpcs = pkl.load(fr)[0]
+            unique_cpcs = pickle.load(fr)[0]
     else:
         with open('data/orders.pkl', 'rb') as fr:
-            unique_cpcs = pkl.load(fr)[1]
+            unique_cpcs = pickle.load(fr)[1]
 
     feat_1, feat_2 = feature_one_two(table, unique_cpcs)
     feat_3, feat_4 = feature_three_four(unique_cpcs, driver_loc)
@@ -212,6 +210,4 @@ tr_df, ts_df = split_train_test(df)
 
 features = features_by_set(tr_df, driver_loc, True)
 with open('data/features.pkl', 'wb') as fw:
-    pkl.dump(np.array(features), fw)
-
-
+    pickle.dump(features, fw)
