@@ -2,8 +2,8 @@ from __future__ import division
 from __future__ import print_function
 
 import time
+import pickle
 import pandas as pd
-import pickle as pkl
 import numpy as np
 import argparse
 
@@ -26,6 +26,8 @@ parser.add_argument('--fastmode', action='store_true', default=False,
 parser.add_argument('--seed', type=int, default=42, help='Random seed.')
 parser.add_argument('--epochs', type=int, default=200,
                     help='Number of epochs to train.')
+parser.add_argument('--new_epochs', type=int, default=False,
+                    help='Save final results.')
 parser.add_argument('--lr', type=float, default=0.01,
                     help='Initial learning rate.')
 parser.add_argument('--weight_decay', type=float, default=5e-4,
@@ -47,7 +49,7 @@ if args.cuda:
 
 # Load adj, train/valid network information
 with open('data/tr_val_info.pkl', 'rb') as fr:
-    tr_val_info = pkl.load(fr)
+    tr_val_info = pickle.load(fr)
 
 adj = tr_val_info[0]
 tr_links = tr_val_info[1]
@@ -55,7 +57,7 @@ val_links = tr_val_info[2]
 
 # Get feature matrix: X for GCN layer
 with open('data/features.pkl', 'rb') as fr:
-    features = pkl.load(fr)
+    features = pickle.load(fr)
 
 # Model and optimizer
 model = GCN(nfeat=features.shape[1],
@@ -103,20 +105,28 @@ def train(epoch):
     optimizer.zero_grad()
     pre_output = model(features, adj)
     output = cosine(torch.matmul(tra, pre_output), torch.matmul(trb, pre_output)).reshape(len(tr_links), 1)
-    output = m(output)
+    # This saving output prodedure is for another analysis
+    if epoch == args.epochs:
+        with open('data/last_tr_output.pkl', 'wb') as fw:
+            pickle.dump(output, fw)
+    tr_output = m(output)
     
-    loss_train = criterion(output, tr_labels.float())
-    acc_train = accuracy(output, tr_labels.float())
-    auc_train = auc_score(output, tr_labels.float())
+    loss_train = criterion(tr_output, tr_labels.float())
+    acc_train = accuracy(tr_output, tr_labels.float())
+    auc_train = auc_score(tr_output, tr_labels.float())
     loss_train.backward()
     optimizer.step()
 
     # valid
     output = cosine(torch.matmul(vala, pre_output), torch.matmul(valb, pre_output)).reshape(len(val_links), 1)
-    output = m(output)
-    loss_val = criterion(output, val_labels.float())
-    acc_val = accuracy(output, val_labels.float())
-    auc_val = auc_score(output, val_labels.float())
+    # This saving output prodedure is for another analysis
+    if epoch == args.epochs:
+        with open('data/last_val_output.pkl', 'wb') as fw:
+            pickle.dump(output, fw)
+    val_output = m(output)
+    loss_val = criterion(val_output, val_labels.float())
+    acc_val = accuracy(val_output, val_labels.float())
+    auc_val = auc_score(val_output, val_labels.float())
 
     print('Epoch: {:04d}'.format(epoch+1),
           'loss_train: {:.4f}'.format(loss_train.item()),
@@ -150,26 +160,26 @@ print('Done!')
 # Save loss figure
 epochs = range(1, args.epochs + 1)
 
-plotting(epochs, tr_loss, val_loss,
-        'Training loss','Validation loss',
-        'Training and validation loss',
-        'Epochs',
-        'Loss',
-        'train_val_loss')
-plotting(epochs, tr_acc, val_acc,
-        'Training accuracy','Validation accuracy',
-        'Training and validation accuracy',
-        'Epochs',
-        'Accuracy',
-        'train_val_acc')
-plotting(epochs, tr_auc, val_auc,
-        'Training roc_auc','Validation roc_auc',
-        'Training and validation roc_auc',
-        'Epochs',
-        'ROC AUC',
-        'train_val_auc')
-
-# Save model weights
-weights = [model.gc1.weight, model.gc2.weight]
-with open('data/weights.pkl', 'wb') as fw:
-    pkl.dump(weights, fw)
+if args.new_epochs == False:
+    plotting(epochs, tr_loss, val_loss,
+            'Training loss','Validation loss',
+            'Training and validation loss',
+            'Epochs',
+            'Loss',
+            'train_val_loss')
+    plotting(epochs, tr_acc, val_acc,
+            'Training accuracy','Validation accuracy',
+            'Training and validation accuracy',
+            'Epochs',
+            'Accuracy',
+            'train_val_acc')
+    plotting(epochs, tr_auc, val_auc,
+            'Training roc_auc','Validation roc_auc',
+            'Training and validation roc_auc',
+            'Epochs',
+            'ROC AUC',
+            'train_val_auc')
+else:
+    # Save final model
+    with open('data/gcn_model.pkl', 'wb') as fw:
+        pickle.dump(model, fw)

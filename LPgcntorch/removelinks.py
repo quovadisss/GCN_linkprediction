@@ -107,6 +107,13 @@ def removed_links(adj, percent):
     return sp.csr_matrix(changed_adj), tr_pos_links, val_neg_links, removes
 
 
+def remove_same(links):
+    for i in links:
+        if i[0][0] == i[0][1]:
+            links.remove(i)
+    return links
+
+
 t = time.time()
 
 # Load data
@@ -133,6 +140,10 @@ val_neg_links.extend(val_pos_links)
 
 val_links = [[i,j] for i, j in zip(val_neg_links, val_labels)]
 random.shuffle(val_links)
+
+# Remove pair if node_a and node_b are same
+tr_links = remove_same(tr_links)
+val_links = remove_same(val_links)
 
 tr_val_info = [changed_adj, tr_links, val_links]
 orders = [tr_cpc_order, ts_cpc_order]

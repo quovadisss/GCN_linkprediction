@@ -26,7 +26,6 @@ Get feature matrix: X for GCN layer
 5. CPC'name vector representation
 """
 
-
 # 1. Growing rate, 2. Frequency in the network
 def feature_one_two(df, unique_cpcs):
     table = df.copy()
@@ -188,10 +187,10 @@ def feature_five(unique_cpcs, driver_loc):
 
 def features_by_set(table, driver_loc, tr=True):
     if tr == True:
-        with open(data_loc + 'orders.pkl', 'rb') as fr:
+        with open('data/orders.pkl', 'rb') as fr:
             unique_cpcs = pkl.load(fr)[0]
     else:
-        with open(data_loc + 'orders.pkl', 'rb') as fr:
+        with open('data/orders.pkl', 'rb') as fr:
             unique_cpcs = pkl.load(fr)[1]
 
     feat_1, feat_2 = feature_one_two(table, unique_cpcs)
