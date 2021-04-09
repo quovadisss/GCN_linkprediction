@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 import torch
 
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, recall_score, precision_score
+from sklearn.metrics import f1_score, accuracy_score, confusion_matrix
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
@@ -172,20 +173,21 @@ def get_labels(links):
     return labels
     
 
-def accuracy(output, labels):
-    preds = torch.round(output)
-    correct_results_sum = (preds == labels).sum().float()
-    acc = correct_results_sum/labels.shape[0]
-    acc = torch.round(acc * 100)
-    return acc
-
-
-def auc_score(output, labels):
+def evaluation(output, labels, name):
     preds = torch.round(output)
     y_pred = preds.detach().numpy()
     y_label = labels.detach().numpy()
-    auc = roc_auc_score(y_pred, y_label)
-    return auc
+    acc = accuracy_score(y_label, y_pred)
+    recall = recall_score(y_label, y_pred)
+    precision = precision_score(y_label, y_pred)
+    f1 = f1_score(y_label, y_pred)
+    auc = roc_auc_score(y_label, y_pred)
+
+    print('{} accuracy:'.format(name), acc,
+          '{} f1:'.format(name), f1,
+          '{} auc:'.format(name), auc)
+
+    return [acc, recall, precision, f1, auc]
 
 
 def plotting(x, tr_y, val_y, name_a, name_b, title, x_name, y_name, file_name):
@@ -197,3 +199,23 @@ def plotting(x, tr_y, val_y, name_a, name_b, title, x_name, y_name, file_name):
     plt.legend()
     plt.savefig('data/output/{}.png'.format(file_name))
     plt.close()
+
+
+def preprocess_features(features):
+    """Row-normalize feature matrix and convert to tuple representation"""
+    features = features.astype(np.float32)
+    rowsum = np.array(features.sum(1))
+    r_inv = np.power(rowsum, -1).flatten()
+    r_inv[np.isinf(r_inv)] = 0.
+    r_mat_inv = sp.diags(r_inv)
+    features = r_mat_inv.dot(features)
+
+    return features
+
+
+def confusion_m(output, labels, name):
+    preds = torch.round(output)
+    y_pred = preds.detach().numpy()
+    y_label = labels.detach().numpy()
+    print('{} confusion matrix'.format(name))
+    print(confusion_matrix(y_label, y_pred))

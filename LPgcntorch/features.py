@@ -208,6 +208,15 @@ driver_loc = '/Users/mingyupark/spyder/chromedriver'
 df = pd.read_csv('data/patent.csv').iloc[:, 1:]
 tr_df, ts_df = split_train_test(df)
 
-features = features_by_set(tr_df, driver_loc, True)
-with open('data/features.pkl', 'wb') as fw:
+"""
+tr_df includes train and valid set.
+ts_df stands for test set.
+The model is from tr_df and will be used for test set.
+You create train features for train and valid set first.
+And then, you create test features.
+"""
+# features = features_by_set(tr_df, driver_loc, True)
+features = features_by_set(ts_df, driver_loc, False)
+with open('data/features_ts.pkl', 'wb') as fw:
     pickle.dump(features, fw)
+
